@@ -1,0 +1,85 @@
+
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <title>بحث رقم قطعة أرض</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        #map { height: 90vh; }
+        .header, .search-box {
+            text-align: center;
+            font-family: Arial;
+            padding: 10px;
+        }
+        input[type="text"] {
+            width: 200px;
+            padding: 5px;
+        }
+        button {
+            padding: 5px 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    إبحث عن النمط المسموح للمبنى برقم قطعة الأرض (رقم المخطط)
+</div>
+
+<div class="search-box">
+    <input type="text" id="searchInput" placeholder="أدخل رقم القطعة">
+    <button onclick="searchPlot()">بحث</button>
+</div>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+var map = L.map('map').setView([21.5, 39.8], 15);
+
+var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+}).addTo(map);
+
+var satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles © Esri'
+});
+
+L.control.layers({"خريطة طرق": osm, "خريطة ستالايت": satellite}).addTo(map);
+
+var plotsDatabase = [];
+
+fetch('plots.json')
+    .then(response => response.json())
+    .then(data => { plotsDatabase = data; })
+    .catch(err => alert('فشل تحميل قاعدة البيانات.'));
+
+function searchPlot() {
+    var inputID = document.getElementById('searchInput').value.trim();
+    var found = plotsDatabase.find(f => f.OBJECTID == inputID);
+
+    if (found) {
+        var x = found.POINT_X;
+        var y = found.POINT_Y;
+        var style = found["النمط"];
+
+        map.setView([y, x], 20);
+
+        L.popup()
+            .setLatLng([y, x])
+            .setContent(
+                'رقم القطعة: ' + inputID +
+                '<br><span style="font-size:15px; font-weight:bold;"> الأنماط المسموح بها: ' + style + '</span>' +
+                '<br>الإحداثيات: ' + y.toFixed(5) + ', ' + x.toFixed(5)
+            )
+            .openOn(map);
+    } else {
+        alert('لم يتم العثور على هذه القطعة.');
+    }
+}
+</script>
+
+</body>
+</html>
